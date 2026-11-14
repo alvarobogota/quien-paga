@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#05070c">
+  <title>¿QUIÉN PAGA? - Desafío de Precisión</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #05070c;
+      color: #f0f4f8;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100dvh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.25s ease;
+    }
+
+    #particleCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px 8px 16px;
+      width: 100%;
+      transition: all 0.25s ease;
+    }
+
+    .app-brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-brand h1 {
+      font-size: clamp(1.35rem, 5vw, 1.85rem);
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffd700;
+      text-shadow: 0 0 18px rgba(255, 215, 0, 0.8);
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .app-brand span {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      margin-top: 3px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-top {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      color: #f0f4f8;
+      padding: 8px 11px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-top:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .btn-top.active-full {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: #00e5ff;
+      color: #00e5ff;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+    }
+
+    /* MODO INMERSIVO / PSEUDO-FULLSCREEN (Sin alertas molestas, maximiza espacio) */
+    body.immersive-mode .top-bar {
+      padding: 8px 12px 4px 12px;
+    }
+
+    body.immersive-mode .app-brand h1 {
+      font-size: 1.15rem;
+    }
+
+    body.immersive-mode .app-brand span {
+      display: none;
+    }
+
+    body.immersive-mode .screen {
+      padding: 6px 10px 12px 10px;
+    }
+
+    body.immersive-mode .touch-arena {
+      border-radius: 22px;
+    }
+
+    /* Screens */
+    .screen {
+      position: relative;
+      z-index: 5;
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 10px 16px 20px 16px;
+      overflow-y: auto;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* SETUP SCREEN */
+    .card {
+      background: rgba(14, 18, 29, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    .card-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #00e5ff;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 14px;
+      padding: 8px 14px;
+      border: 1px solid rgba(0, 229, 255, 0.25);
+    }
+
+    .btn-step {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      background: rgba(0, 229, 255, 0.12);
+      color: #00e5ff;
+      font-size: 1.5rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-step:active {
+      transform: scale(0.92);
+      background: rgba(0, 229, 255, 0.3);
+    }
+
+    .step-val {
+      font-size: 1.8rem;
+      font-weight: 900;
+      font-family: 'SF Mono', monospace;
+      color: #fff;
+    }
+
+    .players-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      max-height: 210px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .player-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 6px 12px;
+    }
+
+    .player-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 0, 128, 0.25);
+      color: #ff0080;
+      font-weight: 800;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .player-input-row input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      width: 100%;
+      outline: none;
+      user-select: text;
+    }
+
+    .option-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .option-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .option-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .option-info strong {
+      font-size: 0.92rem;
+      color: #f8fafc;
+    }
+
+    .option-info small {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .toggle-pill {
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-pill.active-purple {
+      background: rgba(213, 0, 249, 0.25);
+      border-color: #d500f9;
+      color: #ea80fc;
+      box-shadow: 0 0 12px rgba(213, 0, 249, 0.35);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(135deg, #ffd700 0%, #ff9100 100%);
+      color: #05070c;
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4);
+      margin-top: auto;
+      transition: transform 0.15s ease;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    /* GAMEPLAY SCREEN */
+    .game-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .pill-info {
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #ffd700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-info span {
+      font-family: 'SF Mono', monospace;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .pill-round {
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      color: #00e5ff;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    /* Strikes Mini Strip */
+    .strikes-strip {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .strike-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #cbd5e1;
+    }
+
+    .strike-chip.danger {
+      background: rgba(255, 23, 68, 0.2);
+      border-color: rgba(255, 23, 68, 0.6);
+      color: #ff8a80;
+    }
+
+    /* Giant Touch Pad */
+    .touch-arena {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 28px;
+      border: 2px solid rgba(0, 229, 255, 0.35);
+      background: radial-gradient(circle at center, rgba(0, 229, 255, 0.14) 0%, rgba(10, 14, 24, 0.9) 75%);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: inset 0 0 40px rgba(0, 229, 255, 0.1);
+    }
+
+    .touch-arena.running {
+      border-color: #00e676;
+      background: radial-gradient(circle at center, rgba(0, 230, 118, 0.22) 0%, rgba(10, 14, 24, 0.92) 75%);
+      box-shadow: inset 0 0 50px rgba(0, 230, 118, 0.2), 0 0 25px rgba(0, 230, 118, 0.25);
+    }
+
+    .touch-arena.stopped {
+      border-color: #ffd700;
+      background: radial-gradient(circle at center, rgba(255, 215, 0, 0.18) 0%, rgba(10, 14, 24, 0.92) 75%);
+      cursor: default;
+    }
+
+    .turn-badge {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .active-player-name {
+      font-size: clamp(1.8rem, 7vw, 2.6rem);
+      font-weight: 900;
+      color: #00e5ff;
+      text-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+      margin-bottom: 18px;
+      line-height: 1.1;
+    }
+
+    .touch-arena.running .active-player-name {
+      color: #00e676;
+      text-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+    }
+
+    .touch-arena.stopped .active-player-name {
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+
+    .big-timer {
+      font-family: 'SF Mono', 'Courier New', monospace;
+      font-size: clamp(3.6rem, 15vw, 5.5rem);
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin: 10px 0;
+    }
+
+    .big-timer .ms {
+      font-size: 0.5em;
+      opacity: 0.85;
+    }
+
+    .tap-instruction {
+      margin-top: 18px;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      animation: pulsePrompt 1.4s infinite;
+    }
+
+    .touch-arena.running .tap-instruction {
+      background: rgba(0, 230, 118, 0.2);
+      color: #00e676;
+      border: 1px solid rgba(0, 230, 118, 0.5);
+    }
+
+    .result-feedback {
+      margin-top: 12px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #ffd700;
+    }
+
+    .btn-next-turn {
+      margin-top: 16px;
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(135deg, #00e5ff 0%, #00b0ff 100%);
+      color: #05070c;
+      font-size: 1.05rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 229, 255, 0.35);
+    }
+
+    .btn-next-turn:active {
+      transform: scale(0.97);
+    }
+
+    /* ROUND SUMMARY & FINAL VERDICT SCREEN */
+    .verdict-banner {
+      text-align: center;
+      padding: 18px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+      background: rgba(255, 23, 68, 0.15);
+      border: 1px solid rgba(255, 23, 68, 0.5);
+      box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);
+    }
+
+    .verdict-banner.game-over {
+      background: linear-gradient(135deg, rgba(255, 23, 68, 0.35) 0%, rgba(213, 0, 249, 0.3) 100%);
+      border: 2px solid #ff1744;
+      animation: pulseAlert 0.8s infinite alternate;
+    }
+
+    .verdict-banner h2 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #ff8a80;
+      margin-bottom: 6px;
+    }
+
+    .verdict-banner .loser-highlight {
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(255, 23, 68, 0.9);
+    }
+
+    .verdict-banner p {
+      font-size: 0.85rem;
+      color: #f8fafc;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .rank-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .rank-item.best {
+      background: rgba(255, 215, 0, 0.12);
+      border-color: rgba(255, 215, 0, 0.45);
+    }
+
+    .rank-item.worst {
+      background: rgba(255, 23, 68, 0.18);
+      border-color: rgba(255, 23, 68, 0.6);
+    }
+
+    .rank-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rank-pos {
+      font-weight: 900;
+      font-size: 1rem;
+      width: 24px;
+      color: #94a3b8;
+    }
+
+    .rank-item.best .rank-pos { color: #ffd700; }
+    .rank-item.worst .rank-pos { color: #ff1744; }
+
+    .rank-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rank-strikes {
+      font-size: 0.75rem;
+      color: #ff8a80;
+      margin-top: 2px;
+    }
+
+    .rank-right {
+      text-align: right;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .rank-time {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .rank-diff {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .rank-item.worst .rank-diff { color: #ff8a80; font-weight: 700; }
+    .rank-item.best .rank-diff { color: #ffd700; font-weight: 700; }
+
+    .action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 13px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.07);
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* HISTORY MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #101420;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 22px;
+      padding: 20px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 82dvh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .modal-header h3 {
+      font-size: 1.1rem;
+      color: #ffd700;
+      letter-spacing: 1px;
+    }
+
+    .history-scroll {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .history-round-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+    }
+
+    .history-round-header {
+      display: flex;
+      justify-content: space-between;
+      color: #00e5ff;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    @keyframes pulsePrompt {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.97); opacity: 0.75; }
+    }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(0.99); }
+      100% { transform: scale(1.01); }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- Barra Superior -->
+  <div class="top-bar">
+    <div class="app-brand">
+      <h1>¿QUIÉN PAGA?</h1>
+      <span>2 rondas siendo el peor = pagas 💸</span>
+    </div>
+    <div class="top-actions">
+      <button class="btn-top" onclick="openHistoryModal()">📜 Historial</button>
+      <button class="btn-top" id="btnFullscreen" onclick="toggleFullscreen()">⛶ Full</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 1: CONFIGURACIÓN -->
+  <div class="screen active" id="screenSetup">
+    <div class="card">
+      <div class="card-title">
+        <span>👥 Jugadores en la mesa</span>
+        <span style="color:#ffd700;" id="playerCountLabel">3 Jugadores</span>
+      </div>
+      <div class="stepper">
+        <button class="btn-step" onclick="changePlayerCount(-1)">−</button>
+        <div class="step-val" id="playerCountVal">3</div>
+        <button class="btn-step" onclick="changePlayerCount(1)">+</button>
+      </div>
+      <div class="players-inputs" id="playersInputsList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ Reglas de la Partida</div>
+      <div class="option-row">
+        <div class="option-info">
+          <strong>🎲 Tiempo Meta Aleatorio</strong>
+          <small>Cambia automáticamente entre 05,00s y 15,00s en cada ronda</small>
+        </div>
+        <span style="color:#ffd700; font-weight:800; font-size:0.85rem;">ACTIVO</span>
+      </div>
+      <div class="option-row">
+        <div class="option-info">
+          <strong>🙈 Modo Ciego</strong>
+          <small>Oculta el cronómetro después de 2.5 segundos</small>
+        </div>
+        <button class="toggle-pill" id="btnBlindSetup" onclick="toggleBlindMode()">OFF</button>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="startMatch()">¡EMPEZAR RONDA 1! 🚀</button>
+  </div>
+
+  <!-- PANTALLA 2: TURNO ACTIVO (PASA EL CELULAR) -->
+  <div class="screen" id="screenPlay">
+    <div class="game-status-bar">
+      <div class="pill-round" id="roundIndicator">RONDA 1</div>
+      <div class="pill-info">🎯 META: <span id="playTargetDisplay">10,00s</span></div>
+    </div>
+
+    <div class="strikes-strip" id="strikesStrip"></div>
+
+    <div class="touch-arena" id="touchArena" onclick="handleArenaTap()">
+      <div class="turn-badge" id="turnBadge">TURNO 1 DE 3</div>
+      <div class="active-player-name" id="activePlayerName">JUGADOR 1</div>
+      <div class="big-timer" id="bigTimer">00,00<span class="ms">s</span></div>
+      <div class="result-feedback" id="resultFeedback" style="display:none;"></div>
+      <div class="tap-instruction" id="tapInstruction">TOCA PARA ARRANCAR</div>
+    </div>
+
+    <button class="btn-next-turn" id="btnNextTurn" style="display:none;" onclick="advanceTurn()">
+      PASAR AL SIGUIENTE ➡️
+    </button>
+  </div>
+
+  <!-- PANTALLA 3: RESULTADOS DE RONDA / VEREDICTO FINAL -->
+  <div class="screen" id="screenResults">
+    <div class="verdict-banner" id="verdictBanner">
+      <h2 id="verdictSubtitle">PEOR DE LA RONDA 1</h2>
+      <div class="loser-highlight" id="verdictTitle">JUGADOR 2 ❌</div>
+      <p id="verdictDesc">Acumula 1/2 strikes. ¡A un paso de pagar!</p>
+    </div>
+
+    <div class="card" style="padding:14px;">
+      <div class="card-title">
+        <span>📊 Resultados de la Ronda</span>
+        <span style="color:#ffd700;" id="resultTargetTag">Meta: 10,00s</span>
+      </div>
+      <div class="ranking-list" id="rankingList"></div>
+    </div>
+
+    <div class="action-stack">
+      <button class="btn-primary" id="btnNextRound" onclick="startNextRound()">SIGUIENTE RONDA 🎲</button>
+      <button class="btn-secondary" onclick="resetToSetup()">Cambiar Jugadores / Reiniciar Todo</button>
+    </div>
+  </div>
+
+  <!-- MODAL HISTORIAL -->
+  <div class="modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📜 HISTORIAL DE RONDAS</h3>
+        <button class="btn-top" onclick="closeHistoryModal()">✕</button>
+      </div>
+      <div class="history-scroll" id="historyContent">
+        <p style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:20px 0;">
+          Aún no se ha completado ninguna ronda.
+        </p>
+      </div>
+      <button class="btn-secondary" onclick="closeHistoryModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    /* Partículas de Fondo */
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 0.8;
+        this.speedX = (Math.random() - 0.5) * 0.4;
+        this.speedY = (Math.random() - 0.5) * 0.4;
+        this.color = Math.random() > 0.5 ? '#00e5ff' : '#ffd700';
+        this.opacity = Math.random() * 0.45 + 0.15;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 45; i++) particles.push(new Particle());
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    /* Estado de la Aplicación */
+    let playerCount = 3;
+    let players = [];
+    let isBlindMode = false;
+    let currentRound = 1;
+    let targetMs = 10000;
+    let currentTurnIndex = 0;
+    let turnState = 'idle';
+    let startTime = 0;
+    let elapsedMs = 0;
+    let timerRAF = null;
+    let currentRoundResults = [];
+    let matchHistory = [];
+
+    /* Inicializar Inputs de Jugadores */
+    function renderPlayerInputs() {
+      const container = document.getElementById('playersInputsList');
+      const existingValues = Array.from(container.querySelectorAll('input')).map(inp => inp.value);
+      container.innerHTML = '';
+
+      document.getElementById('playerCountVal').textContent = playerCount;
+      document.getElementById('playerCountLabel').textContent = `${playerCount} Jugadores`;
+
+      for (let i = 0; i < playerCount; i++) {
+        const val = existingValues[i] !== undefined ? existingValues[i] : `Jugador ${i + 1}`;
+        const row = document.createElement('div');
+        row.className = 'player-input-row';
+        row.innerHTML = `
+          <div class="player-badge">${i + 1}</div>
+          <input type="text" value="${val}" placeholder="Nombre Jugador ${i + 1}" maxlength="18">
+        `;
+        container.appendChild(row);
+      }
+    }
+
+    function changePlayerCount(delta) {
+      playerCount = Math.min(12, Math.max(2, playerCount + delta));
+      renderPlayerInputs();
+    }
+
+    function toggleBlindMode() {
+      isBlindMode = !isBlindMode;
+      const btn = document.getElementById('btnBlindSetup');
+      if (isBlindMode) {
+        btn.textContent = 'ON 🙈';
+        btn.classList.add('active-purple');
+      } else {
+        btn.textContent = 'OFF';
+        btn.classList.remove('active-purple');
+      }
+    }
+
+    /* Fullscreen Híbrido (Nativo en Android/Desktop + Inmersivo instantáneo en iOS) */
+    function updateFullscreenButtonUI(isActive) {
+      const btn = document.getElementById('btnFullscreen');
+      if (isActive) {
+        btn.classList.add('active-full');
+        btn.textContent = '✕ Salir';
+      } else {
+        btn.classList.remove('active-full');
+        btn.textContent = '⛶ Full';
+      }
+    }
+
+    function toggleFullscreen() {
+      const el = document.documentElement;
+      const isNativeFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      const isImmersive = document.body.classList.contains('immersive-mode');
+
+      if (!isNativeFullscreen && !isImmersive) {
+        // Intentar fullscreen nativo primero; si el navegador móvil (iOS) lo bloquea, activar modo inmersivo limpio
+        if (el.requestFullscreen) {
+          el.requestFullscreen().then(() => {
+            document.body.classList.add('immersive-mode');
+            updateFullscreenButtonUI(true);
+          }).catch(() => {
+            activateImmersiveFallback();
+          });
+        } else if (el.webkitRequestFullscreen) {
+          try {
+            el.webkitRequestFullscreen();
+            document.body.classList.add('immersive-mode');
+            updateFullscreenButtonUI(true);
+          } catch (e) {
+            activateImmersiveFallback();
+          }
+        } else {
+          activateImmersiveFallback();
+        }
+      } else {
+        if (isNativeFullscreen) {
+          if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+        document.body.classList.remove('immersive-mode');
+        updateFullscreenButtonUI(false);
+      }
+    }
+
+    function activateImmersiveFallback() {
+      document.body.classList.add('immersive-mode');
+      updateFullscreenButtonUI(true);
+      window.scrollTo(0, 1);
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!isFs) {
+        document.body.classList.remove('immersive-mode');
+        updateFullscreenButtonUI(false);
+      }
+    });
+
+    /* Audio Sintetizado + Vibración */
+    function triggerFeedback(type) {
+      if (navigator.vibrate) {
+        if (type === 'tap') navigator.vibrate(35);
+        else if (type === 'loser') navigator.vibrate([120, 60, 200]);
+        else if (type === 'gameover') navigator.vibrate([200, 80, 200, 80, 400]);
+      }
+
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (type === 'tap') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = 520;
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.12);
+        } else if (type === 'loser' || type === 'gameover') {
+          const notes = type === 'gameover' ? [220, 175, 130] : [190, 150];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.22, audioCtx.currentTime + idx * 0.16);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + idx * 0.16 + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + idx * 0.16);
+            osc.stop(audioCtx.currentTime + idx * 0.16 + 0.35);
+          });
+        }
+      } catch (e) {}
+    }
+
+    /* Formateo de Tiempo */
+    function formatSeconds(ms) {
+      const totalSecs = Math.floor(ms / 1000);
+      const hundredths = Math.floor((ms % 1000) / 10);
+      const sStr = String(totalSecs).padStart(2, '0');
+      const hStr = String(hundredths).padStart(2, '0');
+      return `${sStr},${hStr}`;
+    }
+
+    function generateRandomTarget() {
+      const secs = Math.floor(Math.random() * 11) + 5;
+      const tenths = Math.floor(Math.random() * 10) * 100;
+      targetMs = secs * 1000 + tenths;
+    }
+
+    /* Navegación de Pantallas */
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    /* Inicio de Partida */
+    function startMatch() {
+      const inputs = document.querySelectorAll('#playersInputsList input');
+      players = Array.from(inputs).map((inp, idx) => ({
+        id: idx,
+        name: inp.value.trim() || `Jugador ${idx + 1}`,
+        strikes: 0
+      }));
+
+      currentRound = 1;
+      matchHistory = [];
+      setupRound();
+    }
+
+    function setupRound() {
+      generateRandomTarget();
+      currentTurnIndex = 0;
+      currentRoundResults = [];
+      document.getElementById('roundIndicator').textContent = `RONDA ${currentRound}`;
+      document.getElementById('playTargetDisplay').textContent = `${formatSeconds(targetMs)}s`;
+      renderStrikesStrip();
+      prepareTurnUI();
+      showScreen('screenPlay');
+    }
+
+    function renderStrikesStrip() {
+      const strip = document.getElementById('strikesStrip');
+      strip.innerHTML = players.map(p => `
+        <div class="strike-chip ${p.strikes > 0 ? 'danger' : ''}">
+          <span>${p.name}:</span>
+          <strong>${p.strikes === 0 ? '⚪⚪' : (p.strikes === 1 ? '🔴⚪' : '🔴🔴')}</strong>
+        </div>
+      `).join('');
+    }
+
+    function prepareTurnUI() {
+      cancelAnimationFrame(timerRAF);
+      turnState = 'idle';
+      elapsedMs = 0;
+
+      const currentPlayer = players[currentTurnIndex];
+      const arena = document.getElementById('touchArena');
+      arena.className = 'touch-arena';
+
+      document.getElementById('turnBadge').textContent = `TURNO ${currentTurnIndex + 1} DE ${players.length}`;
+      document.getElementById('activePlayerName').textContent = currentPlayer.name.toUpperCase();
+      document.getElementById('bigTimer').innerHTML = `00,00<span class="ms">s</span>`;
+      document.getElementById('resultFeedback').style.display = 'none';
+
+      const instr = document.getElementById('tapInstruction');
+      instr.style.display = 'inline-block';
+      instr.textContent = 'TOCA AQUÍ PARA ARRANCAR';
+
+      document.getElementById('btnNextTurn').style.display = 'none';
+    }
+
+    function updateTimerLoop() {
+      if (turnState !== 'running') return;
+      elapsedMs = performance.now() - startTime;
+
+      const timerEl = document.getElementById('bigTimer');
+      if (isBlindMode && elapsedMs > 2500) {
+        timerEl.innerHTML = `??,??<span class="ms">s</span>`;
+      } else {
+        timerEl.innerHTML = `${formatSeconds(elapsedMs)}<span class="ms">s</span>`;
+      }
+
+      timerRAF = requestAnimationFrame(updateTimerLoop);
+    }
+
+    function handleArenaTap() {
+      if (turnState === 'idle') {
+        turnState = 'running';
+        startTime = performance.now();
+        triggerFeedback('tap');
+
+        const arena = document.getElementById('touchArena');
+        arena.className = 'touch-arena running';
+        document.getElementById('tapInstruction').textContent = '¡TOCA PARA DETENER!';
+        updateTimerLoop();
+
+      } else if (turnState === 'running') {
+        turnState = 'stopped';
+        cancelAnimationFrame(timerRAF);
+        elapsedMs = performance.now() - startTime;
+        triggerFeedback('tap');
+
+        const arena = document.getElementById('touchArena');
+        arena.className = 'touch-arena stopped';
+
+        const formattedTime = formatSeconds(elapsedMs);
+        document.getElementById('bigTimer').innerHTML = `${formattedTime}<span class="ms">s</span>`;
+        document.getElementById('tapInstruction').style.display = 'none';
+
+        const diffMs = Math.abs(elapsedMs - targetMs);
+        const diffSecs = (diffMs / 1000).toFixed(2);
+
+        const feedback = document.getElementById('resultFeedback');
+        feedback.style.display = 'block';
+        feedback.textContent = diffMs < 15
+          ? `🎯 ¡CLAVADO PERFECTO! (Dif: ±${diffSecs}s)`
+          : `Diferencia con la meta: ±${diffSecs}s`;
+
+        currentRoundResults.push({
+          playerId: players[currentTurnIndex].id,
+          name: players[currentTurnIndex].name,
+          timeMs: elapsedMs,
+          formattedTime: formattedTime,
+          diffMs: diffMs,
+          diffSecs: diffSecs
+        });
+
+        const btnNext = document.getElementById('btnNextTurn');
+        btnNext.style.display = 'block';
+        btnNext.textContent = (currentTurnIndex + 1 < players.length)
+          ? `PASAR A ${players[currentTurnIndex + 1].name.toUpperCase()} ➡️`
+          : 'VER RESULTADOS DE LA RONDA 🏆';
+      }
+    }
+
+    function advanceTurn() {
+      if (currentTurnIndex + 1 < players.length) {
+        currentTurnIndex++;
+        prepareTurnUI();
+      } else {
+        evaluateRound();
+      }
+    }
+
+    function evaluateRound() {
+      const sorted = [...currentRoundResults].sort((a, b) => a.diffMs - b.diffMs);
+      const worstResult = sorted[sorted.length - 1];
+      const worstPlayer = players.find(p => p.id === worstResult.playerId);
+
+      worstPlayer.strikes += 1;
+      const isGameOver = worstPlayer.strikes >= 2;
+
+      matchHistory.unshift({
+        round: currentRound,
+        target: `${formatSeconds(targetMs)}s`,
+        loserName: worstPlayer.name,
+        loserStrikes: worstPlayer.strikes,
+        results: sorted
+      });
+
+      const banner = document.getElementById('verdictBanner');
+      const subtitle = document.getElementById('verdictSubtitle');
+      const title = document.getElementById('verdictTitle');
+      const desc = document.getElementById('verdictDesc');
+      const btnNextRound = document.getElementById('btnNextRound');
+
+      if (isGameOver) {
+        banner.className = 'verdict-banner game-over';
+        subtitle.textContent = '🚨 ¡TENEMOS PAGADOR OFICIAL! 🚨';
+        title.textContent = `💸 ¡${worstPlayer.name.toUpperCase()} PAGA! 💸`;
+        desc.textContent = `Acumuló 2 rondas siendo el peor de la mesa (Dif: ±${worstResult.diffSecs}s).`;
+        btnNextRound.textContent = 'REVANCHA (REINICIAR MARCADORES) 🔄';
+        btnNextRound.onclick = () => {
+          players.forEach(p => p.strikes = 0);
+          currentRound = 1;
+          setupRound();
+        };
+        triggerFeedback('gameover');
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 160, spread: 80, origin: { y: 0.6 } });
+        }
+      } else {
+        banner.className = 'verdict-banner';
+        subtitle.textContent = `PEOR DE LA RONDA ${currentRound}`;
+        title.textContent = `${worstPlayer.name.toUpperCase()} 🔴⚪`;
+        desc.textContent = `Suma 1 strike (Dif: ±${worstResult.diffSecs}s). Si vuelve a perder, ¡paga!`;
+        btnNextRound.textContent = `JUGAR RONDA ${currentRound + 1} 🎲`;
+        btnNextRound.onclick = startNextRound;
+        triggerFeedback('loser');
+      }
+
+      document.getElementById('resultTargetTag').textContent = `Meta: ${formatSeconds(targetMs)}s`;
+
+      const rankingList = document.getElementById('rankingList');
+      rankingList.innerHTML = sorted.map((item, idx) => {
+        const pObj = players.find(p => p.id === item.playerId);
+        const isBest = idx === 0;
+        const isWorst = idx === sorted.length - 1;
+        const badge = isBest ? '👑' : (isWorst ? '💸' : `${idx + 1}.`);
+        const strikeIcons = pObj.strikes === 0 ? 'Sin strikes' : (pObj.strikes === 1 ? '🔴 1 Strike (En capilla)' : '🔴🔴 2 Strikes (¡PAGA!)');
+
+        return `
+          <div class="rank-item ${isBest ? 'best' : ''} ${isWorst ? 'worst' : ''}">
+            <div class="rank-left">
+              <div class="rank-pos">${badge}</div>
+              <div class="rank-name">
+                <span>${item.name}</span>
+                <span class="rank-strikes">${strikeIcons}</span>
+              </div>
+            </div>
+            <div class="rank-right">
+              <div class="rank-time">${item.formattedTime}s</div>
+              <div class="rank-diff">±${item.diffSecs}s</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      showScreen('screenResults');
+    }
+
+    function startNextRound() {
+      currentRound++;
+      setupRound();
+    }
+
+    function resetToSetup() {
+      cancelAnimationFrame(timerRAF);
+      showScreen('screenSetup');
+    }
+
+    /* Historial Modal */
+    function openHistoryModal() {
+      const container = document.getElementById('historyContent');
+      if (matchHistory.length === 0) {
+        container.innerHTML = `<p style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:20px 0;">Aún no se ha completado ninguna ronda.</p>`;
+      } else {
+        container.innerHTML = matchHistory.map(h => `
+          <div class="history-round-card">
+            <div class="history-round-header">
+              <span>Ronda ${h.round} (Meta: ${h.target})</span>
+              <span style="color:#ff8a80;">Peor: ${h.loserName} (${h.loserStrikes}/2)</span>
+            </div>
+            <div style="color:#cbd5e1; font-size:0.78rem; line-height:1.4;">
+              ${h.results.map((r, i) => `${i + 1}. <strong>${r.name}</strong>: ${r.formattedTime}s (±${r.diffSecs}s)`).join(' · ')}
+            </div>
+          </div>
+        `).join('');
+      }
+      document.getElementById('historyModal').classList.add('active');
+    }
+
+    function closeHistoryModal(e) {
+      if (!e || e.target.id === 'historyModal') {
+        document.getElementById('historyModal').classList.remove('active');
+      }
+    }
+
+    renderPlayerInputs();
+  </script>
+</body>
+</html>
