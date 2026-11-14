@@ -107,7 +107,7 @@
       box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
     }
 
-    /* MODO INMERSIVO / PSEUDO-FULLSCREEN (Sin alertas molestas, maximiza espacio) */
+    /* MODO INMERSIVO */
     body.immersive-mode .top-bar {
       padding: 8px 12px 4px 12px;
     }
@@ -326,7 +326,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
     .pill-info {
@@ -356,35 +356,6 @@
       padding: 6px 12px;
       font-size: 0.78rem;
       font-weight: 800;
-    }
-
-    /* Strikes Mini Strip */
-    .strikes-strip {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 6px;
-      margin-bottom: 8px;
-    }
-
-    .strike-chip {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 4px 10px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: #cbd5e1;
-    }
-
-    .strike-chip.danger {
-      background: rgba(255, 23, 68, 0.2);
-      border-color: rgba(255, 23, 68, 0.6);
-      color: #ff8a80;
     }
 
     /* Giant Touch Pad */
@@ -506,25 +477,20 @@
       transform: scale(0.97);
     }
 
-    /* ROUND SUMMARY & FINAL VERDICT SCREEN */
+    /* ROUND VERDICT SCREEN (DIRECTO EN 1 RONDA) */
     .verdict-banner {
       text-align: center;
       padding: 18px;
       border-radius: 20px;
       margin-bottom: 14px;
-      background: rgba(255, 23, 68, 0.15);
-      border: 1px solid rgba(255, 23, 68, 0.5);
-      box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);
-    }
-
-    .verdict-banner.game-over {
-      background: linear-gradient(135deg, rgba(255, 23, 68, 0.35) 0%, rgba(213, 0, 249, 0.3) 100%);
+      background: linear-gradient(135deg, rgba(255, 23, 68, 0.35) 0%, rgba(213, 0, 249, 0.28) 100%);
       border: 2px solid #ff1744;
-      animation: pulseAlert 0.8s infinite alternate;
+      box-shadow: 0 0 28px rgba(255, 23, 68, 0.3);
+      animation: pulseAlert 0.85s infinite alternate;
     }
 
     .verdict-banner h2 {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       text-transform: uppercase;
       letter-spacing: 2px;
       color: #ff8a80;
@@ -549,14 +515,14 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 6px;
     }
 
     .rank-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 14px;
+      padding: 11px 14px;
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -568,8 +534,8 @@
     }
 
     .rank-item.worst {
-      background: rgba(255, 23, 68, 0.18);
-      border-color: rgba(255, 23, 68, 0.6);
+      background: rgba(255, 23, 68, 0.2);
+      border-color: rgba(255, 23, 68, 0.65);
     }
 
     .rank-left {
@@ -596,11 +562,14 @@
       flex-direction: column;
     }
 
-    .rank-strikes {
-      font-size: 0.75rem;
-      color: #ff8a80;
+    .rank-tag {
+      font-size: 0.74rem;
+      color: #94a3b8;
       margin-top: 2px;
     }
+
+    .rank-item.best .rank-tag { color: #ffd700; }
+    .rank-item.worst .rank-tag { color: #ff8a80; font-weight: 700; }
 
     .rank-right {
       text-align: right;
@@ -727,7 +696,7 @@
   <div class="top-bar">
     <div class="app-brand">
       <h1>¿QUIÉN PAGA?</h1>
-      <span>2 rondas siendo el peor = pagas 💸</span>
+      <span>El más lejos de la meta paga 💸</span>
     </div>
     <div class="top-actions">
       <button class="btn-top" onclick="openHistoryModal()">📜 Historial</button>
@@ -755,7 +724,7 @@
       <div class="option-row">
         <div class="option-info">
           <strong>🎲 Tiempo Meta Aleatorio</strong>
-          <small>Cambia automáticamente entre 05,00s y 15,00s en cada ronda</small>
+          <small>Cambia automáticamente entre 05,00s y 15,00s en cada partida</small>
         </div>
         <span style="color:#ffd700; font-weight:800; font-size:0.85rem;">ACTIVO</span>
       </div>
@@ -768,17 +737,15 @@
       </div>
     </div>
 
-    <button class="btn-primary" onclick="startMatch()">¡EMPEZAR RONDA 1! 🚀</button>
+    <button class="btn-primary" onclick="startMatch()">¡EMPEZAR PARTIDA! 🚀</button>
   </div>
 
   <!-- PANTALLA 2: TURNO ACTIVO (PASA EL CELULAR) -->
   <div class="screen" id="screenPlay">
     <div class="game-status-bar">
-      <div class="pill-round" id="roundIndicator">RONDA 1</div>
+      <div class="pill-round" id="roundIndicator">PARTIDA #1</div>
       <div class="pill-info">🎯 META: <span id="playTargetDisplay">10,00s</span></div>
     </div>
-
-    <div class="strikes-strip" id="strikesStrip"></div>
 
     <div class="touch-arena" id="touchArena" onclick="handleArenaTap()">
       <div class="turn-badge" id="turnBadge">TURNO 1 DE 3</div>
@@ -793,25 +760,25 @@
     </button>
   </div>
 
-  <!-- PANTALLA 3: RESULTADOS DE RONDA / VEREDICTO FINAL -->
+  <!-- PANTALLA 3: VEREDICTO INMEDIATO (1 RONDA) -->
   <div class="screen" id="screenResults">
-    <div class="verdict-banner" id="verdictBanner">
-      <h2 id="verdictSubtitle">PEOR DE LA RONDA 1</h2>
-      <div class="loser-highlight" id="verdictTitle">JUGADOR 2 ❌</div>
-      <p id="verdictDesc">Acumula 1/2 strikes. ¡A un paso de pagar!</p>
+    <div class="verdict-banner">
+      <h2 id="verdictSubtitle">VEREDICTO DE LA PARTIDA #1</h2>
+      <div class="loser-highlight" id="verdictTitle">💸 ¡JUGADOR 2 PAGA! 💸</div>
+      <p id="verdictDesc">Quedó más lejos de la meta (Dif: ±1,45s).</p>
     </div>
 
     <div class="card" style="padding:14px;">
       <div class="card-title">
-        <span>📊 Resultados de la Ronda</span>
+        <span>📊 Posiciones de la Ronda</span>
         <span style="color:#ffd700;" id="resultTargetTag">Meta: 10,00s</span>
       </div>
       <div class="ranking-list" id="rankingList"></div>
     </div>
 
     <div class="action-stack">
-      <button class="btn-primary" id="btnNextRound" onclick="startNextRound()">SIGUIENTE RONDA 🎲</button>
-      <button class="btn-secondary" onclick="resetToSetup()">Cambiar Jugadores / Reiniciar Todo</button>
+      <button class="btn-primary" onclick="startNextRound()">JUGAR OTRA RONDA (DESEMPATE / REVANCHA) 🎲</button>
+      <button class="btn-secondary" onclick="resetToSetup()">Cambiar Jugadores</button>
     </div>
   </div>
 
@@ -819,12 +786,12 @@
   <div class="modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3>📜 HISTORIAL DE RONDAS</h3>
+        <h3>📜 HISTORIAL DE PARTIDAS</h3>
         <button class="btn-top" onclick="closeHistoryModal()">✕</button>
       </div>
       <div class="history-scroll" id="historyContent">
         <p style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:20px 0;">
-          Aún no se ha completado ninguna ronda.
+          Aún no se ha jugado ninguna ronda.
         </p>
       </div>
       <button class="btn-secondary" onclick="closeHistoryModal()">Cerrar</button>
@@ -931,7 +898,7 @@
       }
     }
 
-    /* Fullscreen Híbrido (Nativo en Android/Desktop + Inmersivo instantáneo en iOS) */
+    /* Fullscreen Híbrido */
     function updateFullscreenButtonUI(isActive) {
       const btn = document.getElementById('btnFullscreen');
       if (isActive) {
@@ -949,7 +916,6 @@
       const isImmersive = document.body.classList.contains('immersive-mode');
 
       if (!isNativeFullscreen && !isImmersive) {
-        // Intentar fullscreen nativo primero; si el navegador móvil (iOS) lo bloquea, activar modo inmersivo limpio
         if (el.requestFullscreen) {
           el.requestFullscreen().then(() => {
             document.body.classList.add('immersive-mode');
@@ -996,7 +962,6 @@
     function triggerFeedback(type) {
       if (navigator.vibrate) {
         if (type === 'tap') navigator.vibrate(35);
-        else if (type === 'loser') navigator.vibrate([120, 60, 200]);
         else if (type === 'gameover') navigator.vibrate([200, 80, 200, 80, 400]);
       }
 
@@ -1013,8 +978,8 @@
           gain.connect(audioCtx.destination);
           osc.start();
           osc.stop(audioCtx.currentTime + 0.12);
-        } else if (type === 'loser' || type === 'gameover') {
-          const notes = type === 'gameover' ? [220, 175, 130] : [190, 150];
+        } else if (type === 'gameover') {
+          const notes = [220, 175, 130];
           notes.forEach((freq, idx) => {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -1058,7 +1023,7 @@
       players = Array.from(inputs).map((inp, idx) => ({
         id: idx,
         name: inp.value.trim() || `Jugador ${idx + 1}`,
-        strikes: 0
+        losses: 0
       }));
 
       currentRound = 1;
@@ -1070,21 +1035,10 @@
       generateRandomTarget();
       currentTurnIndex = 0;
       currentRoundResults = [];
-      document.getElementById('roundIndicator').textContent = `RONDA ${currentRound}`;
+      document.getElementById('roundIndicator').textContent = `PARTIDA #${currentRound}`;
       document.getElementById('playTargetDisplay').textContent = `${formatSeconds(targetMs)}s`;
-      renderStrikesStrip();
       prepareTurnUI();
       showScreen('screenPlay');
-    }
-
-    function renderStrikesStrip() {
-      const strip = document.getElementById('strikesStrip');
-      strip.innerHTML = players.map(p => `
-        <div class="strike-chip ${p.strikes > 0 ? 'danger' : ''}">
-          <span>${p.name}:</span>
-          <strong>${p.strikes === 0 ? '⚪⚪' : (p.strikes === 1 ? '🔴⚪' : '🔴🔴')}</strong>
-        </div>
-      `).join('');
     }
 
     function prepareTurnUI() {
@@ -1168,7 +1122,7 @@
         btnNext.style.display = 'block';
         btnNext.textContent = (currentTurnIndex + 1 < players.length)
           ? `PASAR A ${players[currentTurnIndex + 1].name.toUpperCase()} ➡️`
-          : 'VER RESULTADOS DE LA RONDA 🏆';
+          : 'VER QUIÉN PAGA 💸';
       }
     }
 
@@ -1186,49 +1140,25 @@
       const worstResult = sorted[sorted.length - 1];
       const worstPlayer = players.find(p => p.id === worstResult.playerId);
 
-      worstPlayer.strikes += 1;
-      const isGameOver = worstPlayer.strikes >= 2;
+      worstPlayer.losses += 1;
 
       matchHistory.unshift({
         round: currentRound,
         target: `${formatSeconds(targetMs)}s`,
         loserName: worstPlayer.name,
-        loserStrikes: worstPlayer.strikes,
+        loserDiff: worstResult.diffSecs,
         results: sorted
       });
 
-      const banner = document.getElementById('verdictBanner');
-      const subtitle = document.getElementById('verdictSubtitle');
-      const title = document.getElementById('verdictTitle');
-      const desc = document.getElementById('verdictDesc');
-      const btnNextRound = document.getElementById('btnNextRound');
-
-      if (isGameOver) {
-        banner.className = 'verdict-banner game-over';
-        subtitle.textContent = '🚨 ¡TENEMOS PAGADOR OFICIAL! 🚨';
-        title.textContent = `💸 ¡${worstPlayer.name.toUpperCase()} PAGA! 💸`;
-        desc.textContent = `Acumuló 2 rondas siendo el peor de la mesa (Dif: ±${worstResult.diffSecs}s).`;
-        btnNextRound.textContent = 'REVANCHA (REINICIAR MARCADORES) 🔄';
-        btnNextRound.onclick = () => {
-          players.forEach(p => p.strikes = 0);
-          currentRound = 1;
-          setupRound();
-        };
-        triggerFeedback('gameover');
-        if (typeof confetti === 'function') {
-          confetti({ particleCount: 160, spread: 80, origin: { y: 0.6 } });
-        }
-      } else {
-        banner.className = 'verdict-banner';
-        subtitle.textContent = `PEOR DE LA RONDA ${currentRound}`;
-        title.textContent = `${worstPlayer.name.toUpperCase()} 🔴⚪`;
-        desc.textContent = `Suma 1 strike (Dif: ±${worstResult.diffSecs}s). Si vuelve a perder, ¡paga!`;
-        btnNextRound.textContent = `JUGAR RONDA ${currentRound + 1} 🎲`;
-        btnNextRound.onclick = startNextRound;
-        triggerFeedback('loser');
-      }
-
+      document.getElementById('verdictSubtitle').textContent = `VEREDICTO DE LA PARTIDA #${currentRound}`;
+      document.getElementById('verdictTitle').textContent = `💸 ¡${worstPlayer.name.toUpperCase()} PAGA! 💸`;
+      document.getElementById('verdictDesc').textContent = `Fue el más alejado de la meta (Dif: ±${worstResult.diffSecs}s).`;
       document.getElementById('resultTargetTag').textContent = `Meta: ${formatSeconds(targetMs)}s`;
+
+      triggerFeedback('gameover');
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 75, origin: { y: 0.6 } });
+      }
 
       const rankingList = document.getElementById('rankingList');
       rankingList.innerHTML = sorted.map((item, idx) => {
@@ -1236,7 +1166,9 @@
         const isBest = idx === 0;
         const isWorst = idx === sorted.length - 1;
         const badge = isBest ? '👑' : (isWorst ? '💸' : `${idx + 1}.`);
-        const strikeIcons = pObj.strikes === 0 ? 'Sin strikes' : (pObj.strikes === 1 ? '🔴 1 Strike (En capilla)' : '🔴🔴 2 Strikes (¡PAGA!)');
+        const tagText = isBest
+          ? '¡Más preciso! Salvado'
+          : (isWorst ? `¡Le toca pagar! (${pObj.losses} ${pObj.losses === 1 ? 'derrota' : 'derrotas'} en total)` : 'Salvado');
 
         return `
           <div class="rank-item ${isBest ? 'best' : ''} ${isWorst ? 'worst' : ''}">
@@ -1244,7 +1176,7 @@
               <div class="rank-pos">${badge}</div>
               <div class="rank-name">
                 <span>${item.name}</span>
-                <span class="rank-strikes">${strikeIcons}</span>
+                <span class="rank-tag">${tagText}</span>
               </div>
             </div>
             <div class="rank-right">
@@ -1272,13 +1204,13 @@
     function openHistoryModal() {
       const container = document.getElementById('historyContent');
       if (matchHistory.length === 0) {
-        container.innerHTML = `<p style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:20px 0;">Aún no se ha completado ninguna ronda.</p>`;
+        container.innerHTML = `<p style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:20px 0;">Aún no se ha jugado ninguna ronda.</p>`;
       } else {
         container.innerHTML = matchHistory.map(h => `
           <div class="history-round-card">
             <div class="history-round-header">
-              <span>Ronda ${h.round} (Meta: ${h.target})</span>
-              <span style="color:#ff8a80;">Peor: ${h.loserName} (${h.loserStrikes}/2)</span>
+              <span>Partida #${h.round} (Meta: ${h.target})</span>
+              <span style="color:#ff8a80;">Pagó: ${h.loserName}</span>
             </div>
             <div style="color:#cbd5e1; font-size:0.78rem; line-height:1.4;">
               ${h.results.map((r, i) => `${i + 1}. <strong>${r.name}</strong>: ${r.formattedTime}s (±${r.diffSecs}s)`).join(' · ')}
