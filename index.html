@@ -477,7 +477,7 @@
       transform: scale(0.97);
     }
 
-    /* ROUND VERDICT SCREEN (DIRECTO EN 1 RONDA) */
+    /* ROUND VERDICT SCREEN */
     .verdict-banner {
       text-align: center;
       padding: 18px;
@@ -489,6 +489,12 @@
       animation: pulseAlert 0.85s infinite alternate;
     }
 
+    .verdict-banner.tie-banner {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.32) 0%, rgba(0, 229, 255, 0.25) 100%);
+      border-color: #ffd700;
+      box-shadow: 0 0 28px rgba(255, 215, 0, 0.3);
+    }
+
     .verdict-banner h2 {
       font-size: 0.88rem;
       text-transform: uppercase;
@@ -497,11 +503,19 @@
       margin-bottom: 6px;
     }
 
+    .verdict-banner.tie-banner h2 {
+      color: #ffd700;
+    }
+
     .verdict-banner .loser-highlight {
-      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      font-size: clamp(1.5rem, 5.8vw, 2.1rem);
       font-weight: 900;
       color: #ffffff;
       text-shadow: 0 0 20px rgba(255, 23, 68, 0.9);
+    }
+
+    .verdict-banner.tie-banner .loser-highlight {
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.85);
     }
 
     .verdict-banner p {
@@ -538,6 +552,11 @@
       border-color: rgba(255, 23, 68, 0.65);
     }
 
+    .rank-item.tied {
+      background: rgba(255, 193, 7, 0.16);
+      border-color: rgba(255, 215, 0, 0.6);
+    }
+
     .rank-left {
       display: flex;
       align-items: center;
@@ -551,7 +570,8 @@
       color: #94a3b8;
     }
 
-    .rank-item.best .rank-pos { color: #ffd700; }
+    .rank-item.best .rank-pos,
+    .rank-item.tied .rank-pos { color: #ffd700; }
     .rank-item.worst .rank-pos { color: #ff1744; }
 
     .rank-name {
@@ -568,7 +588,8 @@
       margin-top: 2px;
     }
 
-    .rank-item.best .rank-tag { color: #ffd700; }
+    .rank-item.best .rank-tag,
+    .rank-item.tied .rank-tag { color: #ffd700; font-weight: 700; }
     .rank-item.worst .rank-tag { color: #ff8a80; font-weight: 700; }
 
     .rank-right {
@@ -588,7 +609,8 @@
     }
 
     .rank-item.worst .rank-diff { color: #ff8a80; font-weight: 700; }
-    .rank-item.best .rank-diff { color: #ffd700; font-weight: 700; }
+    .rank-item.best .rank-diff,
+    .rank-item.tied .rank-diff { color: #ffd700; font-weight: 700; }
 
     .action-stack {
       display: flex;
@@ -740,7 +762,7 @@
     <button class="btn-primary" onclick="startMatch()">¡EMPEZAR PARTIDA! 🚀</button>
   </div>
 
-  <!-- PANTALLA 2: TURNO ACTIVO (PASA EL CELULAR) -->
+  <!-- PANTALLA 2: TURNO ACTIVO -->
   <div class="screen" id="screenPlay">
     <div class="game-status-bar">
       <div class="pill-round" id="roundIndicator">PARTIDA #1</div>
@@ -760,9 +782,9 @@
     </button>
   </div>
 
-  <!-- PANTALLA 3: VEREDICTO INMEDIATO (1 RONDA) -->
+  <!-- PANTALLA 3: VEREDICTO INMEDIATO -->
   <div class="screen" id="screenResults">
-    <div class="verdict-banner">
+    <div class="verdict-banner" id="verdictBanner">
       <h2 id="verdictSubtitle">VEREDICTO DE LA PARTIDA #1</h2>
       <div class="loser-highlight" id="verdictTitle">💸 ¡JUGADOR 2 PAGA! 💸</div>
       <p id="verdictDesc">Quedó más lejos de la meta (Dif: ±1,45s).</p>
@@ -777,7 +799,7 @@
     </div>
 
     <div class="action-stack">
-      <button class="btn-primary" onclick="startNextRound()">JUGAR OTRA RONDA (DESEMPATE / REVANCHA) 🎲</button>
+      <button class="btn-primary" id="btnReplay" onclick="startNextRound()">JUGAR OTRA RONDA (DESEMPATE / REVANCHA) 🎲</button>
       <button class="btn-secondary" onclick="resetToSetup()">Cambiar Jugadores</button>
     </div>
   </div>
@@ -996,10 +1018,15 @@
       } catch (e) {}
     }
 
-    /* Formateo de Tiempo */
+    /* Formateo y Redondeo Exacto a Centésimas */
+    function roundToCentiseconds(ms) {
+      return Math.floor(ms / 10) * 10;
+    }
+
     function formatSeconds(ms) {
-      const totalSecs = Math.floor(ms / 1000);
-      const hundredths = Math.floor((ms % 1000) / 10);
+      const totalCentis = Math.floor(ms / 10);
+      const totalSecs = Math.floor(totalCentis / 100);
+      const hundredths = totalCentis % 100;
       const sStr = String(totalSecs).padStart(2, '0');
       const hStr = String(hundredths).padStart(2, '0');
       return `${sStr},${hStr}`;
@@ -1090,7 +1117,10 @@
       } else if (turnState === 'running') {
         turnState = 'stopped';
         cancelAnimationFrame(timerRAF);
-        elapsedMs = performance.now() - startTime;
+
+        // Cuantizamos exactamente a centésimas para que lo mostrado sea 100% igual a lo calculado
+        const rawElapsed = performance.now() - startTime;
+        elapsedMs = roundToCentiseconds(rawElapsed);
         triggerFeedback('tap');
 
         const arena = document.getElementById('touchArena');
@@ -1101,13 +1131,13 @@
         document.getElementById('tapInstruction').style.display = 'none';
 
         const diffMs = Math.abs(elapsedMs - targetMs);
-        const diffSecs = (diffMs / 1000).toFixed(2);
+        const diffFormatted = formatSeconds(diffMs);
 
         const feedback = document.getElementById('resultFeedback');
         feedback.style.display = 'block';
-        feedback.textContent = diffMs < 15
-          ? `🎯 ¡CLAVADO PERFECTO! (Dif: ±${diffSecs}s)`
-          : `Diferencia con la meta: ±${diffSecs}s`;
+        feedback.textContent = diffMs === 0
+          ? `🎯 ¡CLAVADO PERFECTO! (Dif: ±00,00s)`
+          : `Diferencia con la meta: ±${diffFormatted}s`;
 
         currentRoundResults.push({
           playerId: players[currentTurnIndex].id,
@@ -1115,7 +1145,7 @@
           timeMs: elapsedMs,
           formattedTime: formattedTime,
           diffMs: diffMs,
-          diffSecs: diffSecs
+          diffFormatted: diffFormatted
         });
 
         const btnNext = document.getElementById('btnNextTurn');
@@ -1137,41 +1167,84 @@
 
     function evaluateRound() {
       const sorted = [...currentRoundResults].sort((a, b) => a.diffMs - b.diffMs);
-      const worstResult = sorted[sorted.length - 1];
-      const worstPlayer = players.find(p => p.id === worstResult.playerId);
+      const maxDiffMs = sorted[sorted.length - 1].diffMs;
+      const worstGroup = sorted.filter(r => r.diffMs === maxDiffMs);
+      const isWorstTie = worstGroup.length > 1;
 
-      worstPlayer.losses += 1;
-
-      matchHistory.unshift({
-        round: currentRound,
-        target: `${formatSeconds(targetMs)}s`,
-        loserName: worstPlayer.name,
-        loserDiff: worstResult.diffSecs,
-        results: sorted
-      });
-
-      document.getElementById('verdictSubtitle').textContent = `VEREDICTO DE LA PARTIDA #${currentRound}`;
-      document.getElementById('verdictTitle').textContent = `💸 ¡${worstPlayer.name.toUpperCase()} PAGA! 💸`;
-      document.getElementById('verdictDesc').textContent = `Fue el más alejado de la meta (Dif: ±${worstResult.diffSecs}s).`;
+      const banner = document.getElementById('verdictBanner');
+      const btnReplay = document.getElementById('btnReplay');
       document.getElementById('resultTargetTag').textContent = `Meta: ${formatSeconds(targetMs)}s`;
 
-      triggerFeedback('gameover');
-      if (typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 75, origin: { y: 0.6 } });
+      if (isWorstTie) {
+        // EMPATE EN EL PEOR TIEMPO -> DESEMPATE OBLIGATORIO
+        const tiedNames = worstGroup.map(w => w.name.toUpperCase()).join(' Y ');
+        banner.className = 'verdict-banner tie-banner';
+        document.getElementById('verdictSubtitle').textContent = `⚖️ ¡EMPATE EN LA PARTIDA #${currentRound}!`;
+        document.getElementById('verdictTitle').textContent = `🤝 EMPATE: ${tiedNames}`;
+        document.getElementById('verdictDesc').textContent = `Ambos quedaron exactamente a ±${worstGroup[0].diffFormatted}s. ¡Jueguen ronda de desempate!`;
+        btnReplay.textContent = '¡JUGAR RONDA DE DESEMPATE AHORA! 🔥';
+
+        matchHistory.unshift({
+          round: currentRound,
+          target: `${formatSeconds(targetMs)}s`,
+          loserLabel: `Empate (${worstGroup.map(w => w.name).join(' y ')})`,
+          results: sorted
+        });
+
+        triggerFeedback('tap');
+      } else {
+        // HAY UN ÚNICO PERDEDOR CLARO
+        const worstResult = worstGroup[0];
+        const worstPlayer = players.find(p => p.id === worstResult.playerId);
+        worstPlayer.losses += 1;
+
+        banner.className = 'verdict-banner';
+        document.getElementById('verdictSubtitle').textContent = `VEREDICTO DE LA PARTIDA #${currentRound}`;
+        document.getElementById('verdictTitle').textContent = `💸 ¡${worstPlayer.name.toUpperCase()} PAGA! 💸`;
+        document.getElementById('verdictDesc').textContent = `Fue el más alejado de la meta (Dif: ±${worstResult.diffFormatted}s).`;
+        btnReplay.textContent = 'JUGAR OTRA RONDA (REVANCHA) 🎲';
+
+        matchHistory.unshift({
+          round: currentRound,
+          target: `${formatSeconds(targetMs)}s`,
+          loserLabel: `Pagó: ${worstPlayer.name}`,
+          results: sorted
+        });
+
+        triggerFeedback('gameover');
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 150, spread: 75, origin: { y: 0.6 } });
+        }
       }
 
       const rankingList = document.getElementById('rankingList');
+      const minDiffMs = sorted[0].diffMs;
+
       rankingList.innerHTML = sorted.map((item, idx) => {
         const pObj = players.find(p => p.id === item.playerId);
-        const isBest = idx === 0;
-        const isWorst = idx === sorted.length - 1;
-        const badge = isBest ? '👑' : (isWorst ? '💸' : `${idx + 1}.`);
-        const tagText = isBest
-          ? '¡Más preciso! Salvado'
-          : (isWorst ? `¡Le toca pagar! (${pObj.losses} ${pObj.losses === 1 ? 'derrota' : 'derrotas'} en total)` : 'Salvado');
+        const isWorstItem = item.diffMs === maxDiffMs;
+        const isBestItem = !isWorstTie && item.diffMs === minDiffMs;
+
+        let itemClass = '';
+        let badge = `${idx + 1}.`;
+        let tagText = 'Salvado';
+
+        if (isWorstTie && isWorstItem) {
+          itemClass = 'tied';
+          badge = '⚖️';
+          tagText = '¡Empatado en el último lugar! Va a desempate';
+        } else if (!isWorstTie && isWorstItem) {
+          itemClass = 'worst';
+          badge = '💸';
+          tagText = `¡Le toca pagar! (${pObj.losses} ${pObj.losses === 1 ? 'derrota' : 'derrotas'} en total)`;
+        } else if (isBestItem) {
+          itemClass = 'best';
+          badge = '👑';
+          tagText = '¡Más preciso! Salvado';
+        }
 
         return `
-          <div class="rank-item ${isBest ? 'best' : ''} ${isWorst ? 'worst' : ''}">
+          <div class="rank-item ${itemClass}">
             <div class="rank-left">
               <div class="rank-pos">${badge}</div>
               <div class="rank-name">
@@ -1181,7 +1254,7 @@
             </div>
             <div class="rank-right">
               <div class="rank-time">${item.formattedTime}s</div>
-              <div class="rank-diff">±${item.diffSecs}s</div>
+              <div class="rank-diff">±${item.diffFormatted}s</div>
             </div>
           </div>
         `;
@@ -1210,10 +1283,10 @@
           <div class="history-round-card">
             <div class="history-round-header">
               <span>Partida #${h.round} (Meta: ${h.target})</span>
-              <span style="color:#ff8a80;">Pagó: ${h.loserName}</span>
+              <span style="color:#ff8a80;">${h.loserLabel}</span>
             </div>
             <div style="color:#cbd5e1; font-size:0.78rem; line-height:1.4;">
-              ${h.results.map((r, i) => `${i + 1}. <strong>${r.name}</strong>: ${r.formattedTime}s (±${r.diffSecs}s)`).join(' · ')}
+              ${h.results.map((r, i) => `${i + 1}. <strong>${r.name}</strong>: ${r.formattedTime}s (±${r.diffFormatted}s)`).join(' · ')}
             </div>
           </div>
         `).join('');
